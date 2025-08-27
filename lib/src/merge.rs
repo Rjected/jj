@@ -486,15 +486,19 @@ impl<T> Merge<Merge<T>> {
     ///
     /// Let's say we have a 3-way merge of 3-way merges like this:
     ///
+    /// <pre>
     /// 4 5   7 8
     ///  3     6
     ///    1 2
     ///     0
+    /// </pre>
     ///
     /// Flattening that results in this 9-way merge:
     ///
+    /// <pre>
     /// 4 5 0 7 8
     ///  3 2 1 6
+    /// </pre>
     pub fn flatten(self) -> Merge<T> {
         let mut outer_values = self.values.into_iter();
         let mut result = outer_values.next().unwrap();
@@ -577,7 +581,7 @@ where
     }
 
     /// If this merge contains only files or absent entries, returns a merge of
-    /// the `FileId`s`. The executable bits and copy IDs will be ignored. Use
+    /// the `FileId`s. The executable bits and copy IDs will be ignored. Use
     /// `Merge::with_new_file_ids()` to produce a new merge with the original
     /// executable bits preserved.
     pub fn to_file_merge(&self) -> Option<Merge<Option<FileId>>> {

@@ -1062,6 +1062,48 @@ fn test_workspaces_update_stale_snapshot() {
     ");
 }
 
+/// Test that secondary workspaces in colocated repos get a .git gitlink file
+/// pointing to the main .git directory.
+#[test]
+fn test_colocated_workspace_gitlink() {
+    let test_env = TestEnvironment::default();
+    test_env
+        .run_jj_in(".", ["git", "init", "--colocate", "main"])
+        .success();
+    let main_dir = test_env.work_dir("main");
+    let secondary_dir = test_env.work_dir("secondary");
+
+    main_dir
+        .run_jj(["workspace", "add", "../secondary"])
+        .success();
+
+    // The secondary workspace should have a .git file (not directory)
+    let secondary_git_path = secondary_dir.root().join(".git");
+    assert!(
+        secondary_git_path.is_file(),
+        ".git should be a file (gitlink), not a directory"
+    );
+
+    // The gitlink should point to the main .git directory
+    let gitlink_content = std::fs::read_to_string(&secondary_git_path).unwrap();
+    assert!(
+        gitlink_content.starts_with("gitdir: "),
+        "gitlink should start with 'gitdir: '"
+    );
+    let gitdir_path = gitlink_content.trim_start_matches("gitdir: ").trim();
+    assert!(
+        gitdir_path.contains("main") && gitdir_path.ends_with(".git"),
+        "gitdir should point to main/.git, got: {gitdir_path}"
+    );
+
+    // Verify git can find the repo from the secondary workspace
+    let output = secondary_dir.run_jj(["git", "root"]);
+    insta::assert_snapshot!(output.normalize_backslash(), @r#"
+    $TEST_ENV/main/.git
+    [EOF]
+    "#);
+}
+
 /// Test that "workspace update-stale" works in colocated repos.
 ///
 /// This is a regression test for a bug introduced in commit 7a296ca1 where

@@ -30,6 +30,7 @@ use crate::cli_util::RevisionArg;
 use crate::command_error::CommandError;
 use crate::command_error::internal_error_with_message;
 use crate::command_error::user_error;
+use crate::git_util::is_colocated_git_workspace;
 use crate::ui::Ui;
 
 /// How to handle sparse patterns when creating a new workspace.
@@ -127,6 +128,26 @@ pub fn cmd_workspace_add(
         working_copy_factory,
         workspace_name.clone(),
     )?;
+
+    // If the source workspace is colocated with git, create a .git gitlink file
+    // in the new workspace so git tools can find the repository.
+    if is_colocated_git_workspace(
+        old_workspace_command.workspace(),
+        old_workspace_command.repo(),
+    ) {
+        let dest_git_path = destination_path.join(".git");
+        if !dest_git_path.exists() {
+            let source_git_path = old_workspace_command
+                .workspace()
+                .workspace_root()
+                .join(".git");
+            if let Ok(canonical_git_path) = dunce::canonicalize(&source_git_path) {
+                let gitlink_content = format!("gitdir: {}\n", canonical_git_path.display());
+                fs::write(&dest_git_path, gitlink_content).context(&dest_git_path)?;
+            }
+        }
+    }
+
     writeln!(
         ui.status(),
         "Created workspace in \"{}\"",

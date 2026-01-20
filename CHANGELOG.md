@@ -59,6 +59,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed bugs
 
+* `jj workspace add` now creates a `.git` gitlink file in secondary workspaces
+  for colocated repos, allowing git-based build tools (like vergen) to find git
+  metadata from the new workspace.
+
 * `jj git init --colocate` now refuses to run inside a Git worktree, providing
   a helpful error message with alternatives.
   [#8052](https://github.com/jj-vcs/jj/issues/8052)
